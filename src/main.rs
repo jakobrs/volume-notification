@@ -21,7 +21,7 @@ struct Opts {
     path: PathBuf,
 }
 
-const MAX_LENGTH: usize = 64;
+const MAX_LENGTH: usize = 1024;
 
 fn main() -> Result<()> {
     env_logger::init();
