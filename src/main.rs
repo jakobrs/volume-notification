@@ -52,9 +52,7 @@ fn main() -> Result<()> {
                     notification.hint(Hint::CustomInt("value".into(), value));
                 }
 
-                let entry = tags.entry(tag);
-
-                match entry {
+                match tags.entry(tag) {
                     Entry::Occupied(mut entry) => {
                         notification.id(*entry.get());
                         let handle = notification.show()?;
