@@ -52,7 +52,7 @@ fn main() -> Result<()> {
                     notification.hint(Hint::CustomInt("value".into(), value));
                 }
 
-                let entry = tags.entry(tag.clone());
+                let entry = tags.entry(tag);
 
                 match entry {
                     Entry::Occupied(mut entry) => {
