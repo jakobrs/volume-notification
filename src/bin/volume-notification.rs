@@ -18,7 +18,11 @@ struct NotificationRequest {
 
 #[derive(Parser)]
 struct Opts {
-    path: PathBuf,
+    #[clap(long)]
+    socket: PathBuf,
+
+    #[clap(short = 't', long, default_value_t = 2000)]
+    duration: i32,
 }
 
 const MAX_LENGTH: usize = 1024;
@@ -27,10 +31,10 @@ fn main() -> Result<()> {
     env_logger::init();
     let opts = Opts::parse();
 
-    if opts.path.exists() {
-        std::fs::remove_file(&opts.path)?;
+    if opts.socket.exists() {
+        std::fs::remove_file(&opts.socket)?;
     }
-    let socket = UnixDatagram::bind(opts.path)?;
+    let socket = UnixDatagram::bind(opts.socket)?;
 
     let mut buf = [0u8; MAX_LENGTH];
     let mut tags: HashMap<String, u32> = HashMap::new();
@@ -44,7 +48,7 @@ fn main() -> Result<()> {
             Ok(NotificationRequest { tag, body, value }) => {
                 let mut notification = Notification::new();
                 notification.summary(&tag);
-                notification.timeout(3000);
+                notification.timeout(opts.duration);
                 if let Some(body) = body {
                     notification.body(&body);
                 }
