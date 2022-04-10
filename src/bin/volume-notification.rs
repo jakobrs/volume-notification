@@ -1,4 +1,8 @@
-use std::{collections::HashMap, os::unix::net::UnixDatagram, path::PathBuf};
+use std::{
+    collections::HashMap,
+    os::unix::{net::UnixDatagram, prelude::FileTypeExt},
+    path::PathBuf,
+};
 
 use anyhow::Result;
 use clap::Parser;
@@ -27,7 +31,7 @@ fn main() -> Result<()> {
     env_logger::init();
     let opts = Opts::parse();
 
-    if opts.socket.exists() {
+    if opts.socket.exists() && std::fs::metadata(&opts.socket)?.file_type().is_socket() {
         std::fs::remove_file(&opts.socket)?;
     }
     let socket = UnixDatagram::bind(opts.socket)?;
