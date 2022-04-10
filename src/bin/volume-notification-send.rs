@@ -1,6 +1,7 @@
 use std::{os::unix::net::UnixDatagram, path::PathBuf};
 
 use anyhow::Result;
+use bincode::Options;
 use clap::Parser;
 use serde::Serialize;
 
@@ -31,10 +32,12 @@ fn main() -> Result<()> {
         body: opts.body,
         value: opts.value,
     };
-    let notification_request_json = serde_json::to_string(&notification_request)?;
+
+    let bincode_options = bincode::DefaultOptions::new();
+    let notification_request_json = bincode_options.serialize(&notification_request)?;
 
     let socket = UnixDatagram::unbound()?;
-    socket.send_to(notification_request_json.as_bytes(), &opts.socket)?;
+    socket.send_to(&notification_request_json, &opts.socket)?;
 
     Ok(())
 }

@@ -3,6 +3,8 @@ mod notify;
 use std::{cell::RefCell, collections::HashMap, path::PathBuf, rc::Rc};
 
 use anyhow::Result;
+use bincode::Options;
+use byte_string::ByteStr;
 use clap::Parser;
 use futures_util::StreamExt;
 use serde::Deserialize;
@@ -14,7 +16,7 @@ use zbus::{zvariant::Value, Connection};
 
 use notify::Notification;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct NotificationRequest {
     tag: String,
     body: Option<String>,
@@ -51,10 +53,11 @@ async fn main() -> Result<()> {
 
             while let Some(msg) = stream.next().await {
                 let args = msg.args().unwrap();
+                let id = args.id();
 
-                log::debug!("Removing ids");
+                log::debug!("Notification closed");
 
-                ids.borrow_mut().retain(|_k, v| v != args.id())
+                ids.borrow_mut().retain(|_k, v| v != id)
             }
         }
     });
@@ -65,13 +68,15 @@ async fn main() -> Result<()> {
         }
         let socket = UnixDatagram::bind(opts.socket)?;
 
+        let bincode_options = bincode::DefaultOptions::new();
+
         let mut buf = [0u8; MAX_LENGTH];
         loop {
             let count = socket.recv(&mut buf).await?;
 
-            log::debug!("Received message: {:?}", std::str::from_utf8(&buf[..count]));
+            log::debug!("Received message: {:?}", ByteStr::new(&buf[..count]));
 
-            match serde_json::from_slice(&buf[..count]) {
+            match bincode_options.deserialize(&buf[..count]) {
                 Ok(NotificationRequest { tag, body, value }) => {
                     let mut notification = Notification::new();
                     notification.summary(&tag);
