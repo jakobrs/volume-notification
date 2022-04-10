@@ -1,6 +1,8 @@
 mod notify;
 
-use std::{cell::RefCell, collections::HashMap, path::PathBuf, rc::Rc};
+use std::{
+    cell::RefCell, collections::HashMap, os::unix::prelude::FileTypeExt, path::PathBuf, rc::Rc,
+};
 
 use anyhow::Result;
 use bincode::Options;
@@ -63,7 +65,7 @@ async fn main() -> Result<()> {
     });
 
     let main_loop: JoinHandle<Result<()>> = local_set.spawn_local(async move {
-        if opts.socket.exists() {
+        if opts.socket.exists() && std::fs::metadata(&opts.socket)?.file_type().is_socket() {
             std::fs::remove_file(&opts.socket)?;
         }
         let socket = UnixDatagram::bind(opts.socket)?;
@@ -93,9 +95,7 @@ async fn main() -> Result<()> {
                     let id = notification.replaces_id(old_id).show(&connection).await?;
                     ids.borrow_mut().insert(tag, id);
                 }
-                Err(err) => {
-                    log::error!("Error: {err:?}");
-                }
+                Err(err) => log::error!("Error: {err:?}"),
             }
         }
     });
