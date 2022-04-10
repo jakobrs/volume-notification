@@ -1,8 +1,4 @@
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    os::unix::net::UnixDatagram,
-    path::PathBuf,
-};
+use std::{collections::HashMap, os::unix::net::UnixDatagram, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
@@ -56,17 +52,10 @@ fn main() -> Result<()> {
                     notification.hint(Hint::CustomInt("value".into(), value));
                 }
 
-                match tags.entry(tag) {
-                    Entry::Occupied(mut entry) => {
-                        notification.id(*entry.get());
-                        let handle = notification.show()?;
-                        entry.insert(handle.id());
-                    }
-                    Entry::Vacant(entry) => {
-                        let handle = notification.show()?;
-                        entry.insert(handle.id());
-                    }
-                }
+                // id == 0 means that this notification should not override a previous one
+                let entry = tags.entry(tag).or_insert(0);
+                let handle = notification.id(*entry).show()?;
+                *entry = handle.id();
             }
             Err(err) => {
                 log::error!("Error: {err:?}");
