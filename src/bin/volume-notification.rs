@@ -54,12 +54,9 @@ fn main() -> Result<()> {
 
                 // id == 0 means that this notification should not override a previous one
                 let entry = tags.entry(tag).or_insert(0);
-                let handle = notification.id(*entry).show()?;
-                *entry = handle.id();
+                *entry = notification.id(*entry).show()?.id();
             }
-            Err(err) => {
-                log::error!("Error: {err:?}");
-            }
+            Err(err) => log::error!("Error: {err:?}"),
         }
     }
 }
