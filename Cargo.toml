@@ -15,4 +15,5 @@ futures-util = "0.3.21"
 log = "0.4.16"
 serde = { version = "1.0.136", features = ["derive"] }
 tokio = { version = "1.17.0", features = ["macros", "net", "rt"] }
+wasm_mutex = "0.1.1"
 zbus = { version = "2.1.1", features = ["tokio"], default-features = false }

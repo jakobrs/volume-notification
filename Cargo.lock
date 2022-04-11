@@ -793,6 +793,7 @@ dependencies = [
  "log",
  "serde",
  "tokio",
+ "wasm_mutex",
  "zbus",
 ]
 
@@ -813,6 +814,12 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+
+[[package]]
+name = "wasm_mutex"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63ed8b4fb7a05502382cb27f7a0c349832df6b460bf9c9ff7cf8b4f820c09040"
 
 [[package]]
 name = "winapi"

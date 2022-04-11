@@ -1,8 +1,6 @@
 mod notify;
 
-use std::{
-    cell::RefCell, collections::HashMap, os::unix::prelude::FileTypeExt, path::PathBuf, rc::Rc,
-};
+use std::{collections::HashMap, os::unix::prelude::FileTypeExt, path::PathBuf, rc::Rc};
 
 use anyhow::Result;
 use bincode::Options;
@@ -14,6 +12,7 @@ use tokio::{
     net::UnixDatagram,
     task::{JoinHandle, LocalSet},
 };
+use wasm_mutex::Mutex;
 use zbus::{zvariant::Value, Connection};
 
 use notify::Notification;
@@ -41,7 +40,7 @@ async fn main() -> Result<()> {
     env_logger::init();
     let opts = Opts::parse();
 
-    let ids = Rc::new(RefCell::new(HashMap::new()));
+    let ids = Rc::new(Mutex::new(HashMap::new()));
     let connection = Rc::new(Connection::session().await?);
 
     let local_set = LocalSet::new();
@@ -59,7 +58,7 @@ async fn main() -> Result<()> {
 
                 log::debug!("Notification closed");
 
-                ids.borrow_mut().retain(|_k, v| v != id)
+                ids.lock().await.retain(|_k, v| v != id)
             }
         }
     });
@@ -90,10 +89,9 @@ async fn main() -> Result<()> {
                         notification.add_hint("value", Value::I32(value));
                     }
 
-                    // cannot use the entry API because of the await point
-                    let &old_id = ids.borrow().get(&tag).unwrap_or(&0);
-                    let id = notification.replaces_id(old_id).show(&connection).await?;
-                    ids.borrow_mut().insert(tag, id);
+                    let mut ids = ids.lock().await;
+                    let id = ids.entry(tag).or_insert(0);
+                    *id = notification.replaces_id(*id).show(&connection).await?;
                 }
                 Err(err) => log::error!("Error: {err:?}"),
             }
