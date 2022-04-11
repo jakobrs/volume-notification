@@ -1,15 +1,14 @@
-use std::{os::unix::net::UnixDatagram, path::PathBuf};
-
 use anyhow::Result;
-use bincode::Options;
 use clap::Parser;
-use serde::Serialize;
+use zbus::{blocking::Connection, dbus_proxy};
 
-#[derive(Serialize)]
-struct NotificationRequest {
-    tag: String,
-    body: Option<String>,
-    value: Option<i32>,
+#[dbus_proxy(
+    interface = "xyz.domain_name.VolumeNotification",
+    default_service = "xyz.domain_name.VolumeNotification",
+    default_path = "/xyz/domain_name/VolumeNotification"
+)]
+trait VolumeNotification {
+    fn notify(&self, tag: &str, body: &str, value: i32) -> zbus::Result<()>;
 }
 
 #[derive(Parser)]
@@ -20,24 +19,19 @@ struct Opts {
     body: Option<String>,
     #[clap(long)]
     value: Option<i32>,
-
-    #[clap(long)]
-    socket: PathBuf,
 }
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
-    let notification_request = NotificationRequest {
-        tag: opts.tag,
-        body: opts.body,
-        value: opts.value,
-    };
 
-    let bincode_options = bincode::DefaultOptions::new();
-    let notification_request_json = bincode_options.serialize(&notification_request)?;
+    let connection = Connection::session()?;
+    let volume_notification_proxy = VolumeNotificationProxyBlocking::new(&connection)?;
 
-    let socket = UnixDatagram::unbound()?;
-    socket.send_to(&notification_request_json, &opts.socket)?;
+    volume_notification_proxy.notify(
+        &opts.tag,
+        opts.body.as_deref().unwrap_or(""),
+        opts.value.unwrap_or(-1),
+    )?;
 
     Ok(())
 }
